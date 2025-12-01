@@ -1,8 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { FeatureType, ProcessResult } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 /**
  * Converts a File object to a Base64 string.
  */
@@ -31,6 +29,9 @@ export const processImageWithGemini = async (
 ): Promise<ProcessResult> => {
 
   try {
+    // Initialize AI client lazily to prevent top-level crashes if env var is missing during deployment
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
     // 1. Image Recognition / Analysis (Text Output)
     if (feature === FeatureType.RECOGNITION) {
       const response = await ai.models.generateContent({
