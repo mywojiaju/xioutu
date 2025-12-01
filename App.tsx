@@ -6,7 +6,7 @@ import {
   IconShirt, 
   IconImage, 
   IconUpload, 
-  IconLoader,
+  IconLoader, 
   IconWand,
   IconDownload
 } from './components/Icons';
@@ -111,6 +111,7 @@ const App: React.FC = () => {
   };
 
   const activeConfig = FEATURE_CONFIGS.find(c => c.id === activeFeature);
+  const isApiKeyError = error?.includes("API Key");
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500/30 flex flex-col">
@@ -270,8 +271,32 @@ const App: React.FC = () => {
             
             {/* Error Message */}
             {error && (
-              <div className="bg-red-900/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm">
-                {error}
+              <div className={`
+                border px-4 py-4 rounded-lg text-sm flex items-start gap-3
+                ${isApiKeyError ? "bg-amber-900/20 border-amber-500/50 text-amber-200" : "bg-red-900/20 border-red-500/50 text-red-200"}
+              `}>
+                <div className="flex-1">
+                   <p className="font-bold flex items-center gap-2">
+                     {isApiKeyError ? "⚙️ 配置缺失" : "⚠️ 处理出错"}
+                   </p>
+                   <p className="mt-1 opacity-90">{error}</p>
+                   
+                   {isApiKeyError && (
+                     <div className="mt-3 text-xs bg-black/30 p-3 rounded border border-amber-500/20 text-amber-100/80 space-y-2">
+                       <p className="font-semibold text-amber-400">如何解决:</p>
+                       <ul className="list-disc pl-4 space-y-1">
+                         <li>
+                           <span className="font-medium text-amber-100">Vercel 部署:</span> 
+                           在 Settings &gt; Environment Variables 中添加 <code className="bg-black/50 px-1 py-0.5 rounded text-amber-300">API_KEY</code>
+                         </li>
+                         <li>
+                           <span className="font-medium text-amber-100">本地 Vite 运行:</span> 
+                           在根目录创建 <code className="bg-black/50 px-1 py-0.5 rounded text-amber-300">.env</code> 文件并添加 <code className="bg-black/50 px-1 py-0.5 rounded text-amber-300">VITE_API_KEY=您的KEY</code>
+                         </li>
+                       </ul>
+                     </div>
+                   )}
+                </div>
               </div>
             )}
           </div>

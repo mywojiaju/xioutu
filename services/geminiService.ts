@@ -29,8 +29,38 @@ export const processImageWithGemini = async (
 ): Promise<ProcessResult> => {
 
   try {
-    // Initialize AI client lazily to prevent top-level crashes if env var is missing during deployment
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Robustly retrieve the API Key
+    let apiKey = '';
+
+    // 1. Check Vite environment (import.meta.env)
+    // We use try-catch and ignores to prevent errors in environments where import.meta is not supported
+    try {
+      // @ts-ignore
+      if (typeof import.meta !== 'undefined' && import.meta.env) {
+        // @ts-ignore
+        apiKey = import.meta.env.VITE_API_KEY || import.meta.env.API_KEY || '';
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    // 2. Check process.env (Vercel / Node / Webpack) if not found yet
+    if (!apiKey) {
+      try {
+        if (typeof process !== 'undefined' && process.env) {
+          apiKey = process.env.API_KEY || '';
+        }
+      } catch (e) {
+        // Ignore ReferenceError if process is not defined
+      }
+    }
+
+    if (!apiKey) {
+      throw new Error("未检测到 API Key。如果您在本地使用 Vite，请在 .env 文件中配置 VITE_API_KEY；如果在 Vercel 部署，请配置 API_KEY 环境变量。");
+    }
+
+    // Initialize AI client lazily
+    const ai = new GoogleGenAI({ apiKey: apiKey });
 
     // 1. Image Recognition / Analysis (Text Output)
     if (feature === FeatureType.RECOGNITION) {
@@ -94,8 +124,12 @@ export const processImageWithGemini = async (
     
     throw new Error("模型未返回图像数据。");
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
-    throw error;
+    // Rethrow with a user-friendly message if possible
+    if (error.message.includes("API Key")) {
+      throw error; // Keep original message for API key issues
+    }
+    throw new Error(error.message || "AI 处理服务暂时不可用，请稍后重试。");
   }
 };
