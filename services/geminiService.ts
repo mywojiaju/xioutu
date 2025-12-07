@@ -33,7 +33,7 @@ export const processImageWithGemini = async (
     let apiKey = '';
 
     // 1. Check Vite environment (import.meta.env)
-    // We use try-catch and ignores to prevent errors in environments where import.meta is not supported
+    // We use try-catch to allow running in environments where import.meta might be restricted
     try {
       // @ts-ignore
       if (typeof import.meta !== 'undefined' && import.meta.env) {
@@ -44,14 +44,17 @@ export const processImageWithGemini = async (
       // Ignore
     }
 
-    // 2. Check process.env (Vercel / Node / Webpack) if not found yet
+    // 2. Check process.env.API_KEY directly
+    // This handles both Node/Vercel environments AND "Magic String Replacement" in bundlers.
+    // We access it directly inside try-catch instead of checking `typeof process`.
+    // If 'process' is undefined, this throws ReferenceError (caught).
+    // If 'process.env.API_KEY' is replaced by a literal string (e.g. "AIza..."), it works perfectly.
     if (!apiKey) {
       try {
-        if (typeof process !== 'undefined' && process.env) {
-          apiKey = process.env.API_KEY || '';
-        }
+        // @ts-ignore
+        apiKey = process.env.API_KEY; 
       } catch (e) {
-        // Ignore ReferenceError if process is not defined
+        // Ignore
       }
     }
 
@@ -59,7 +62,7 @@ export const processImageWithGemini = async (
       throw new Error("未检测到 API Key。如果您在本地使用 Vite，请在 .env 文件中配置 VITE_API_KEY；如果在 Vercel 部署，请配置 API_KEY 环境变量。");
     }
 
-    // Initialize AI client lazily
+    // Initialize AI client
     const ai = new GoogleGenAI({ apiKey: apiKey });
 
     // 1. Image Recognition / Analysis (Text Output)
